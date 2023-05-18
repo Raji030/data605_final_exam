@@ -1,0 +1,498 @@
+---
+title: "Data605_Final_Project"
+author: "Mahmud Hasan Al Raji"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Problem-1:
+
+# Probability Density 1:  X~Gamma.  
+Using R, generate a random variable X that has 10,000 random Gamma pdf values. A Gamma pdf is completely describe by n (a size parameter) and lambda ($\lambda$, a shape parameter).  Choose any n greater 3 and an expected value ($\lambda$) between 2 and 10 (you choose).  
+
+```{r}
+set.seed(123)
+n <- 4
+lambda <- 3
+X <- rgamma(10000, n, lambda)
+hist(X)
+```
+
+# Probability Density 2:  Y~Sum of Exponentials.  
+Then generate 10,000 observations from the sum of n exponential pdfs with rate/shape parameter ($\lambda$). The n and $\lambda$ must be the same as in the previous case. (e.g., mysum = rexp(10000, $\lambda$) + rexp(10000, $\lambda$) + …)
+
+```{r}
+set.seed(123)
+
+Y <- rexp(10000, lambda) + rexp(10000, lambda) + rexp(10000, lambda) + rexp(10000, lambda)
+hist(Y)
+```
+
+# Probability Density 3:  Z~ Exponential.  
+Then generate 10,000 observations from  a single exponential pdf with rate/shape parameter ($\lambda$).
+
+```{r}
+set.seed(123)
+
+Z <- rexp(10000, rate =lambda)
+hist(Z)
+```
+
+# 1a.  Calculate the empirical expected value (means) and variances of all three pdfs:
+```{r}
+# Calculate empirical mean and variance of Gamma pdf (X)
+m1<-mean(X)
+v1<-var(X)
+
+# Calculate empirical mean and variance of Sum of Exponentials Pdf (Y)
+m2<-mean(Y)
+v2<-var(Y)
+
+# Calculate empirical mean and variance of Single Exponential Pdf(Z)
+m3<-mean(Z)
+v3<-var(Z)
+
+cat("The empirical mean of Gamma pdf:", m1,"\n","The empirical variance of Gamma pdf:", v1,"\n","The empirical mean of Sum of Exponentials pdf:", m2,"\n","The empirical variance of Sum of Exponentials pdf:", v2,"\n","The empirical mean of Single Exponential pdf:", m3,"\n","The empirical variance of Single Exponential pdf:", v3,"\n")                                                  
+```
+
+# 1b. Using calculus, calculate the expected value and variance of the Gamma pdf (X).  Using the moment generating function for exponentials, calculate the expected value of the single exponential (Z) and the sum of exponentials (Y)
+
+Expected value and variance of X (Gamma pdf) using calculus: 
+
+The integral of x times the gamma pdf over the range of the distribution i.e. from o to infinity gives us the expected value of the gamma pdf. On the other hand, the variance will be the integral of the function consisting of the product of the squared difference between each value of x and the expected value of x and the gamma pdf over the entire range of x i.e. from 0 to infinity gives us the variance of the gamma distribution. 
+
+```{r}
+# Calculate expected value
+x_times_pdf <- Vectorize(function(x) x * dgamma(x, n, lambda))
+expected_X <- integrate(x_times_pdf, lower = 0, upper = Inf)$value
+
+# calculate variance
+integrand <- Vectorize(function(x) (x - expected_X)^2 * dgamma(x, n, lambda))
+variance_X <- integrate(integrand, lower = 0, upper = Inf)$value
+
+cat("Expected value: ", expected_X, "\n","Variance: ", variance_X, "\n")
+```
+Expected value of exponential (Z) using the moment generating function: 
+For the exponential distribution Z, the moment generating function is $M_Z(x) = \frac{\lambda}{\lambda - x}$, where $\lambda$ is the rate parameter and x<$\lambda$. Its first derivative evaluated at 0 will give the expected value the exponential distribution which is 1/$\lambda$.
+
+```{r}
+moment_Z<- expression(lambda / (lambda - x))
+derivative_moment_Z <- D(moment_Z,'x')
+expected_Z <- eval(derivative_moment_Z ,list(x=0))
+
+cat("The expected value of exponential pdf Z using moment generating function:",expected_Z,"\n")
+```
+
+Expected value of Sum of exponential (Y) using the moment generating function:
+The moment generating function for the sum of exponentials will be the product of all the individual exponential distribution Y which is $M_Y(x) = (\frac{\lambda}{\lambda - x})^{n}$, and its first derivative evaluated at 0 will be the expected value which is n/$\lambda$.
+
+```{r}
+moment_Y <- expression((lambda / (lambda - x))^n)
+derivative_moment_Y <- D(moment_Y,'x')
+expected_Y <- eval(derivative_moment_Y ,list(x=0))
+
+cat("The expected value of sum of exponential pdf Y using moment generating function:",expected_Y,"\n")
+```
+
+# 1c.  Probability. For pdf Z (the exponential), calculate empirically probabilities a through c.  Then evaluate through calculus whether the memoryless property holds. 
+# a.   P(Z> λ| Z> λ/2)		b.  P(Z> 2λ| Z> λ)   c.  P(Z> 3λ| Z> λ)
+
+```{r}
+## a: Calculate P(Z> λ| Z> λ/2):
+# Count number of observations where Z > λ/2
+n1 <- sum(Z > lambda/2)
+# Count number of observations where Z > λ and Z > λ/2
+n2 <- sum(Z > lambda)
+# Calculate empirical probability of P(Z > λ | Z > λ/2)
+prob_a <- n2/n1
+
+## b: Calculate P(Z> λ| Z> λ/2):
+# Count number of observations where Z > λ
+n3 <- sum(Z > lambda)
+# Count number of observations where Z > 2λ and Z > λ
+n4 <- sum(Z > 2*lambda & Z > lambda)
+# Calculate empirical probability of P(Z > 2λ | Z > λ)
+prob_b <- n4/n3
+
+## c: Calculate P(Z> 3λ| Z> λ):
+# Count number of observations where Z > 3λ
+n5 <- sum(Z > lambda)
+# Count number of observations where Z > 3λ and Z > λ
+n6 <- sum(Z > 3*lambda & Z > lambda)
+# Calculate empirical probability of P(Z > 3λ | Z > λ)
+prob_c<- n6/n5
+
+cat("The probability of the exponential distribution Z for condition-a is:",prob_a,"\n","The probability of the exponential distribution Z for condition-b is:",prob_b,"\n","The probability of the exponential distribution Z for condition-c is:",prob_c,"\n")
+```
+
+```{r}
+## Check for condition-a:
+# Unconditional probability: P(Z > lambda/2)
+uncond_prob_a <- 1 - pexp(lambda/2, rate = 3)
+
+# Conditional probability: P(Z > lambda | Z > lambda/2)
+cond_prob_a <- integrate(function(x) dexp(x, rate = 3) / uncond_prob_a, lower = lambda/2, upper = Inf)$value
+
+# Check if memoryless property holds
+if(abs(cond_prob_a - 1) < 1e-6){
+  print("For P(Z > lambda | Z > lambda/2), memoryless property holds")
+}else{
+  print("For P(Z > lambda | Z > lambda/2), memoryless property does not hold")
+}
+
+## Check for condition condition-b:
+# Unconditional probability: P(Z > lambda)
+uncond_prob_b <- 1 - pexp(lambda, rate = 3)
+
+# Conditional probability: P(Z > 2lambda | Z > lambda)
+cond_prob_b <- integrate(function(x) dexp(x, rate = 3) / uncond_prob_b, lower = lambda, upper = Inf)$value
+
+# Check if memoryless property holds
+if(abs(cond_prob_b - 1) < 1e-6){
+  print("For P(Z > 2lambda | Z > lambda), memoryless property holds")
+}else{
+  print("For P(Z > 2lambda | Z > lambda), memoryless property does not hold")
+}
+
+## Check for condition-c:
+# Unconditional probability: P(Z > lambda)
+uncond_prob_c <- 1 - pexp(lambda, rate = 3)
+
+# Conditional probability: P(Z > 3lambda | Z > lambda)
+cond_prob_c <- integrate(function(x) dexp(x, rate = 3) / uncond_prob_c, lower = lambda, upper = Inf)$value
+
+# Check if memoryless property holds
+if(abs(cond_prob_c - 1) < 1e-6){
+  print("For P(Z > 3lambda | Z > lambda), memoryless property holds")
+}else{
+  print("For P(Z > 3lambda | Z > lambda), memoryless property does not hold")
+}
+
+```
+
+# 1d.Loosely investigate whether P(YZ) = P(Y) P(Z) by building a table with quartiles and evaluating the marginal and joint probabilities.
+
+To investigate whether P(YZ) = P(Y) P(Z), we can build a table with quartiles of Y and Z and then evaluate the marginal and joint probabilities.
+
+```{r}
+# Calculate quartiles of Y and Z
+Y_quartiles <- quantile(Y, probs = c(0.25, 0.5, 0.75,1.0))
+Z_quartiles <- quantile(Z, probs = c(0.25, 0.5, 0.75,1.0))
+
+# Create a single vector by combining Y and Z values by sampling 10000 values from the quartile breakpoints of Y and Z variables 
+single_vector <- paste(sample(Y_quartiles,10000, replace = TRUE), sample(Z_quartiles,10000, replace = TRUE))
+
+# Create a matrix of the counts of the unique combinations of quartile ranges from Y_quartiles and Z_quartiles
+matrix_counts <- matrix(table(single_vector), ncol = 4)
+
+# Convert the count matrix to a matrix of proportion that provides a table of joint probabilities for each quartile combination of Y and Z.
+matrix_prop<- prop.table(matrix_counts)
+
+# Convert the matrix to a data frame and add Sum columns and rows to the data frame
+df <- data.frame(matrix_prop)
+df$Sum <- rowSums(matrix_prop)
+df <- rbind(df, colSums(df))
+row.names(df)[nrow(df)] <- "Sum"
+
+# Specify the column and row names
+colnames(df) <- c("1st Quartile Y", "2nd Quartile Y", "3rd Quartile Y", "4th Quartile Y", "Sum")
+rownames(df) <- c("1st Quartile Z", "2nd Quartile Z", "3rd Quartile Z", "4th Quartile Z", "Sum")
+
+knitr::kable(df)
+```
+
+To compare P(YZ) with P(Y)*P(Z), we can check whether the ratio of these two is close to 1. Now, create a new table for the product of marginal probabilities and calculate the ratio.
+
+```{r}
+# Calculate the product of marginal probabilities
+marginal_Y <- colSums(df)[-5]
+marginal_Y
+marginal_Z <- rowSums(df)[-5]
+marginal_Z
+product_marginals <- as.matrix(outer(marginal_Y, marginal_Z))
+
+# Calculate the ratio of joint probabilities to the product of marginals
+ratio <- df[-5, -5] / product_marginals
+ratio
+```
+Based on the values in ratio table above, it is seen that the joint probabilities P(YZ) are not equal to the product of the marginal probabilities P(Y) and P(Z) for most quartiles of Y and Z. Therefore, we can say that P(YZ) is not equal to P(Y)*P(Z).
+
+# 1e. Check to see if independence holds by using Fisher’s Exact Test and the Chi Square Test.  What is the difference between the two? Which is most appropriate?
+
+Both the Fisher’s Exact Test and the Chi Square Test are used to determine if there is a statistically significant relationship between two categorical variables. 
+
+Fisher’s Exact Test is used when the sample size is small. It can calculate the exact probability of observing the data. On the other hand, the Chi Square Test is used when we the sample size is large. It can approximate the probability distribution of the test statistic. 
+
+In both tests, if the p-value is very low (usually less than 0.05), we can reject the null hypothesis and can conclude that there is a statistically significant relationship between the two variables.
+
+Perform Fisher's exact test on the joint probabilities:
+```{r}
+# Find count table
+count_table<-matrix_prop*10000
+fisher.test(count_table, simulate.p.value = TRUE)
+```
+Perform Chi Square Test:
+```{r}
+chisq.test(count_table)
+```
+Based on the p-value above for both the tests, it can be said that there is no association between Y and Z. Therefore, independence holds on both the Fisher's exact test and the the Chi Square test. Also, for the sample we have here, the Chi Square test is more appropriate.
+
+# Problem 2
+You are to register for Kaggle.com (free) and compete in the House Prices: Advanced Regression Techniques competition. https://www.kaggle.com/c/house-prices-advanced-regression-techniques . I want you to do the following.
+
+# Load the libraries
+
+```{r message=FALSE}
+
+library(readr)
+library(tidyverse)
+library(ggplot2)
+library(pracma)
+library(MASS)
+```
+
+
+# Read data
+
+```{r}
+
+df_train<-read.csv("https://raw.githubusercontent.com/Raji030/data605_final/main/train.csv")
+str(df_train)
+
+# Get names of columns that have at least one NA value
+na_cols <- names(df_train)[colSums(is.na(df_train)) > 0]
+na_cols
+
+# Subset data for a few columns
+df_subset <- subset(df_train, select = c("SalePrice", "LotArea", "OverallQual", "OverallCond", "YearBuilt"))
+head(df_subset)
+
+df_test<-read.csv("https://raw.githubusercontent.com/Raji030/data605_final/main/test.csv")
+
+```
+
+# Univariate descriptive statistics and appropriate plots
+
+```{r}
+# Summary statistics
+summary(df_subset)
+
+# Histogram for SalePrice
+ggplot(df_subset, aes(x = SalePrice)) + 
+  geom_histogram(binwidth = 50000) + 
+  labs(title = "Histogram of SalePrice", x = "SalePrice", y = "Count")
+
+# Boxplot for OverallQual
+ggplot(df_subset, aes(x = OverallQual, y = SalePrice)) + 
+  geom_boxplot() + 
+  labs(title = "Boxplot of SalePrice by OverallQual", x = "OverallQual", y = "SalePrice")
+```
+
+# Scatterplot matrix
+
+```{r}
+# Scatterplot matrix for SalePrice, LotArea, and YearBuilt
+pairs(df_subset[c("SalePrice", "LotArea", "YearBuilt")], 
+      main = "Scatterplot Matrix for SalePrice, LotArea, and YearBuilt")
+```
+
+# Correlation matrix and hypothesis testing
+
+```{r}
+# Correlation matrix for SalePrice, LotArea, and OverallQual
+cor_matrix<-cor(df_subset[c("SalePrice", "LotArea", "OverallQual")])
+cor_matrix
+
+# Hypothesis testing for pairwise correlations
+cor.test(df_subset$SalePrice, df_subset$LotArea, method = "pearson", conf.level = 0.8)
+cor.test(df_subset$SalePrice, df_subset$OverallQual, method = "pearson", conf.level = 0.8)
+cor.test(df_subset$LotArea, df_subset$OverallQual, method = "pearson", conf.level = 0.8)
+```
+
+From the univariate analysis, it is seen that the mean sale price of the houses is USD 180,921, with the minimum sale price is USD 34,900 and the maximum sale price is USD 755,000. The lot area ranges from 1300 sq.ft. to 215,245 sq.ft. with a mean of 10,517 sq.ft. The overall quality of the houses ranges from 1 to 10 with a mean of 6.099, and the overall condition ranges from 1 to 9 with a mean of 5.575. The year built ranges from 1872 to 2010, with a mean of 1971. The bivariate analysis is showing that the sale price is positively correlated with the overall quality of the houses and the lot area. There is a weak positive correlation between sale price and year built.
+
+The correlation matrix for three quantitative variables (sale price, lot area and overall quality) showed that there is a strong positive correlation between sale price and overall quality (r = 0.79) and a moderate positive correlation between sale price and lot area (r = 0.26). There is also a moderate positive correlation between overall quality and lot area (r = 0.11).
+
+Based on the correlation tests above, it can be said that the confidence intervals are not close to zero,rather indicating statistically significant positive correlations between the variables.Therefore, I am not worried about a familywise error occurring where we accidentally reject the null hypothesis.
+
+# Invert your correlation matrix from above. (This is known as the precision matrix and contains variance inflation factors on the diagonal.) Multiply the correlation matrix by the precision matrix, and then multiply the precision matrix by the correlation matrix. Conduct LU decomposition on the matrix.  
+
+```{r}
+# Invert correlation matrix
+#cor_matrix <- cor(df_subset[c("SalePrice", "LotArea", "OverallQual")])
+preci_matrix <- solve(cor_matrix)
+preci_matrix
+# Multiply correlation matrix by precision matrix
+cor_preci_prod <- cor_matrix %*% preci_matrix
+cor_preci_prod
+# Multiply precision matrix by correlation matrix
+preci_cor_prod <- preci_matrix %*% cor_matrix
+cor_preci_prod
+# Perform LU decomposition
+lu_decom <- lu(cor_matrix)
+lu_decom
+```
+
+# Calculus-Based Probability & Statistics.  Many times, it makes sense to fit a closed form distribution to data.  Select a variable in the Kaggle.com training dataset that is skewed to the right, shift it so that the minimum value is absolutely above zero if necessary.  Then load the MASS package and run fitdistr to fit an exponential probability density function.  (See  https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/fitdistr.html ).  Find the optimal value of $\lambda$ for this distribution, and then take 1000 samples from this exponential distribution using this value (e.g., rexp(1000, $\lambda$)).  Plot a histogram and compare it with a histogram of your original variable.   Using the exponential pdf, find the 5th and 95th percentiles using the cumulative distribution function (CDF).   Also generate a 95% confidence interval from the empirical data, assuming normality.  Finally, provide the empirical 5th percentile and 95th percentile of the data.  Discuss.
+
+From the SalePrice variable drawn above it is found that the distribution of this variable is right-skewed. From the summary of the SalePrice data it is found that the minimum value of this variable is above zero and also practically SalePrice of the houses can never be zero, so we don't perform any shifting here. 
+
+```{r}
+# Fit exponential distribution by using 'fitdistr' function from the MASS package
+fit <- fitdistr(df_subset$SalePrice, "exponential")
+
+#Find the optimal value of lambda for this exponential distribution
+lambda <- fit$estimate
+
+# Generate 1000 random samples from the exponential distribution using the estimated lambda value
+samples <- rexp(1000, rate = lambda)
+```
+
+# Plot histograms to compare the original variable and the generated exponential samples
+
+```{r}
+# Histogram of original variable
+hist(df_subset$SalePrice,main = "Histogram for original variable")
+
+# Histogram of exponential samples
+hist(samples, main = "Histogram of exponential samples")
+```
+
+# Using the exponential pdf, find the 5th and 95th percentiles using the cumulative distribution function (CDF)
+
+```{r}
+# Find percentiles using exponential CDF 
+p_5th <- qexp(0.05, rate = lambda)
+p_95th <- qexp(0.95, rate = lambda)
+```
+
+# Calculate a 95% confidence interval from the empirical data assuming normality
+
+```{r}
+# Generate 95% confidence interval
+mean_value <- mean(df_subset$SalePrice)
+sd_value <- sd(df_subset$SalePrice)
+n <- length(df_subset$SalePrice)
+alpha <- 0.05
+
+lower_ci <- mean_value - qnorm(1 - alpha/2) * (sd_value / sqrt(n))
+upper_ci <- mean_value + qnorm(1 - alpha/2) * (sd_value / sqrt(n))
+cat("lower interval is:",lower_ci,"and upper interval is:",upper_ci)
+```
+
+# Determine the empirical 5th and 95th percentiles of the original variable
+
+```{r}
+# Calculate empirical percentiles
+empirical_5th <- quantile(df_subset$SalePrice, 0.05)
+empirical_95th <- quantile(df_subset$SalePrice, 0.95)
+
+```
+
+# Modeling.  Build some type of multiple regression  model and submit your model to the competition board.  Provide your complete model summary and results with analysis.  Report your Kaggle.com user name and score. Provide a screen snapshot of your score with your name identifiable.
+
+# Buid multiple regression model
+
+For building up the multiple regression model I chose variables: OverallQual, GrLivArea, TotalBsmtSF, GarageCars, YearBuilt, Neighborhood, ExterQual, as because I think these are the impactful variables to consider for predicting the Sale Price of the houses. Also, these variables have no missing values.
+
+```{r}
+# Select few variables that look significant to SalePrice
+selected_vars <- c("SalePrice", "OverallQual", "GrLivArea", "TotalBsmtSF", "GarageCars", "YearBuilt", "Neighborhood", "ExterQual")
+
+# Get a subset of the train data
+subset_data <- df_train[, selected_vars]
+
+# Convert qualitative variables to factors
+subset_data$Neighborhood <- as.factor(subset_data$Neighborhood)
+subset_data$ExterQual <- as.factor(subset_data$ExterQual)
+
+# Build regression model
+model <- lm(SalePrice ~ OverallQual + GrLivArea + TotalBsmtSF + GarageCars + YearBuilt + Neighborhood + ExterQual, data = subset_data)
+
+# Get model summary
+summary(model)
+```
+
+The R-squared value found for the model is 0.8204. This indicates that the model we have developed is a good fit for the data. This model can explain 82.04% of the variability in the Sales price data. Additionally, the F-test p-value is less than 0.05 suggesting that the overall model is statistically significant. This means that at least one of the independent variables has a significant impact on the Sales price, which supporting the validity of the model. Overall, based on the R-squared value, accuracy, and statistical significance, it can be said that the model is well-fitted and valid for predicting the Sales price based on the selected independent variables.
+
+# Residual analysis
+
+```{r}
+par(mfrow=c(2,2))
+plot(model)
+```
+
+
+From the residuals plot above, it is seen that the distribution of residuals appears to be approximately normal. Additionally, there is no evidence of heteroscedasticity found.The residuals remains fairly consistent across the range of predicted values. Moreover, there are no discernible patterns or trends observed in the residuals. This means the model adequately captures the relationships between the independent and the dependent variables. Therefore, it can be said that the assumptions of the multiple regression model are met.
+
+
+# Subset test data and prepare for prediction
+
+```{r}
+# Select predictor variables 
+selected_vars1 <- c("Id", "OverallQual", "GrLivArea", "TotalBsmtSF", "GarageCars", "YearBuilt", "Neighborhood", "ExterQual")
+
+# Get a subset of the test data
+subset_test <- df_test[, selected_vars1]
+
+# Check if any missing value present in the subset test data
+sapply(subset_test, function(x){sum(is.na(x))})
+
+# Replace missing values with mean of specific columns
+subset_test <- subset_test%>% 
+  mutate(across(c("TotalBsmtSF", "GarageCars"), ~ifelse(is.na(.), mean(., na.rm = TRUE), .)))
+
+# Change categorical variables into factor in test dataset
+subset_test <- subset_test %>%
+  mutate_at(vars(Neighborhood, ExterQual), as.factor)
+```
+
+# Predict sale price for test dataset
+
+```{r}
+predicted <- predict(model, subset_test)
+data1 <- data.frame(Id = subset_test$Id, SalePrice=predicted)
+write.csv(data1,"kagglesubmission.csv",row.names = FALSE)
+```
+
+# Kaggle submission
+
+Kaggle username is MHAR03 . Final score is 0.17538 
+
+```{r, echo=FALSE, out.width="100%"}
+knitr::include_graphics("F:\\CUNY masters\\data605\\final\\Screenshot 2023-05-17 001453.png")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
